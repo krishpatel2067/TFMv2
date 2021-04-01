@@ -1,8 +1,16 @@
+
+--[[==[
+
+TFMv2 (Time Formatting Module version 2) - format time with ease and flexibility.
+	by TheCarbyneUniverse (inspired by goldenstein64's version of TFM 1)
+
+]==]]
+
 local TFM = {}
 
 TFM._SECS_MIN_ = 60
 TFM._SECS_HR_ = 60 * TFM._SECS_MIN_
-TFM._SECS_DAY_ = 24 * TFM._SECS_HR_			
+TFM._SECS_DAY_ = 24 * TFM._SECS_HR_
 TFM.SECS_MON = 30 * TFM._SECS_DAY_
 TFM.SECS_YR = 365 * TFM._SECS_DAY_
 
@@ -11,6 +19,10 @@ local IN_SECS = {1, TFM._SECS_MIN_, TFM._SECS_HR_, TFM._SECS_DAY_, TFM.SECS_MON,
 local IN_MS = {1, 1000, 1000 * TFM._SECS_MIN_, 1000 * TFM._SECS_HR_, 1000 * TFM._SECS_DAY_, 1000 * TFM.SECS_MON, 1000 * TFM.SECS_YR}
 local UNITS = {'ms', 'sec', 'min', 'hr', 'day', 'mon', 'yr'}
 local FORMATS = {'s', 'S', 'm', 'h', 'd', 'M', 'y'}
+
+--> IN_SECS = {sec, min, hr, day, mon, yr}
+--> IN_MS = {ms, sec, min, hr, day, mon, yr}
+--> FORMATS = {ms, sec, min, hr, day, mon, yr}
 
 ---------------------------------------------==========[[ PRIVATE FUNCTIONS ]]==========---------------------------------------------
 
@@ -23,6 +35,7 @@ local function assert(condition, msg, lvl)
 
 end
 
+-- function used by Convert() and ConvertMil()
 local function convert(num, isMil, max)
 
 	max = max or 'hr'
@@ -65,22 +78,17 @@ end
 
 ---------------------------------------------==========[[ CONSUMER FUNCTIONS ]]==========---------------------------------------------
 
-function TFM.SetSeconds(dict)
+function TFM.Convert(sec, max)
 
-	for i, v in pairs(dict) do
+	assert(max ~= 'ms' and max ~= 'sec', 'cannot set max to ms or sec (arg #2)')
+	return convert(sec, false, max)
 
-		if i:match('SECS_%a+') and TFM[i] then
+end
 
-			local unit = i:split('_')[2]:lower()
-			local index = table.find(UNITS, unit)
+function TFM.ConvertMil(ms, max)
 
-			TFM[i] = v
-			IN_SECS[index - 1] = v
-			IN_MS[index] = 1000 * v
-
-		end
-
-	end
+	assert(max ~= 'ms', 'cannot set max to ms (arg #2)')
+	return convert(ms, true, max)
 
 end
 
@@ -91,28 +99,29 @@ function TFM.FormatStr(converted, formatStr)
 		-- %% for a literal % and * is for 0 or more of that char
 		-- this line determines how many times to iterate, which is to do it for as many formating parts found
 		-- it includes %a, %a(sin/plu), %02a, etc.
-		local _, iter = string.gsub(formatStr, '%%%A*' .. FORMATS[i], '')
+		local _, iter = formatStr:gsub('%%%A*' .. FORMATS[i], '')
 
 		for _ = 1, iter do
 
-			-- check any conditional plurals (in the format of %a(singular_term\1plural_term)  )
-			local capture = string.match(formatStr, '%%' .. FORMATS[i] .. '%(([%C]*%c[%C]*)%)')		-- use %c for control char, %C for everything else
+			-- check any conditional plurals (in the format of %a(singular_term[control_char]plural_term))
+			local capture = formatStr:match('%%' .. FORMATS[i] .. '%(([%C]*%c[%C]*)%)')		-- use %c for control char, %C for everything else
 
-			if capture then
+			if capture then		-- singular-plural syntax found
 
-				local sin, plu = unpack(capture:split(capture:match('%c')))
+				local controlChar = capture:match('%c')
+				local sin, plu = unpack(capture:split(controlChar))		-- split into singular & plural
 				local val = converted[UNITS[i]] ~= 1 and plu or sin
 				local toRepl = '%%' .. FORMATS[i] .. '%([%C]*%c[%C]*%)'
 				
-				formatStr = string.gsub(formatStr, toRepl, converted[UNITS[i]] and val or '', 1)
+				formatStr = formatStr:gsub(toRepl, converted[UNITS[i]] and val or '', 1)	-- if key doesn't exist, replace with ''
 
-			else
+			else	-- no singular-plural syntax found
 
 				-- captures the parts between % and the specifier for string.format
-				capture = string.match(formatStr, '%%(%A*)' .. FORMATS[i])
+				capture = formatStr:match('%%(%A*)' .. FORMATS[i])
 				local repl = converted[UNITS[i]] and string.format('%' .. capture .. 's', converted[UNITS[i]]) or ''
 
-				formatStr = string.gsub(formatStr, '%%%A*' .. FORMATS[i], repl)
+				formatStr = formatStr:gsub('%%%A*' .. FORMATS[i], repl)
 
 			end
 
@@ -124,17 +133,25 @@ function TFM.FormatStr(converted, formatStr)
 
 end
 
-function TFM.ConvertMil(ms, max)
+function TFM.SetSeconds(dict)
 
-	assert(max ~= 'ms', 'cannot set max to ms (arg #2)')
-	return convert(ms, true, max)
+	for i, v in pairs(dict) do
 
-end
+		if not (i:match('SECS_%u+') and TFM[i]) then
 
-function TFM.Convert(sec, max)
+			warn('TFMv2: key ' .. i .. ' not found; nothing has been changed')
+			return
 
-	assert(max ~= 'ms' or max ~= 'sec', 'cannot set max to ms or sec (arg #2)')
-	return convert(sec, false, max)
+		end
+
+		local unit = i:split('_')[2]:lower()
+		local index = table.find(UNITS, unit)
+
+		TFM[i] = v
+		IN_SECS[index - 1] = v
+		IN_MS[index] = 1000 * v
+
+	end
 
 end
 

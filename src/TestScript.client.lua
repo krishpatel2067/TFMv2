@@ -1,3 +1,9 @@
+--[[==[
+
+This script showcases the different functions of TFMv2 along with a GUI timer system (from the demo)!
+
+]==]]
+
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local TFMv2 = require(ReplicatedStorage:WaitForChild('TFMv2'))
 
