@@ -4,7 +4,7 @@ Format your time with ease and flexibility.
 
 ## Installation Methods
 ### Method 1 (Roblox Model)
-Simply acquire the [Roblox model](_________) (only contains the module script).
+Simply acquire the [Roblox model](https://www.roblox.com/library/6598240995/TFMv2-Time-Formatting-Module-version-2) (only contains the module script).
 
 
 ### Method 2 (.rbxmx File)
@@ -26,4 +26,4 @@ Download this repository. Merge the `src` directory with yours. The `default.pro
 
 ___
 
-Read the more about the installation methods or view the documentation and the demo on the [DevForum release post](______________________).
+Read the more about the installation methods or view the documentation and the demo on the [DevForum release post](https://devforum.roblox.com/t/1143888).
